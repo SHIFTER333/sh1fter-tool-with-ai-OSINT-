@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "UserRecord": {
+      "title": "User Record",
+      "description": "User specific data, like favorites.",
+      "type": "object",
+      "properties": {
+        "favorites": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of favorite tool IDs"
+        }
+      }
+    },
+    "Note": {
+      "title": "Note",
+      "description": "A user's note.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "Note content" },
+        "date": { "type": "string", "description": "Timestamp string of creation" },
+        "userId": { "type": "string", "description": "Owner of the note" }
+      },
+      "required": ["text", "date", "userId"]
+    },
+    "Assignment": {
+      "title": "Assignment",
+      "description": "A case or assignment a user is working on.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Assignment title" },
+        "userId": { "type": "string", "description": "Owner of the assignment" },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "done": { "type": "boolean" }
+            },
+            "required": ["id", "name", "done"]
+          }
+        }
+      },
+      "required": ["name", "userId", "tasks"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/UserRecord" },
+      "description": "User profile containing favorites."
+    },
+    "users/{userId}/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "Notes owned by a user."
+    },
+    "users/{userId}/assignments/{assignmentId}": {
+      "schema": { "$ref": "#/entities/Assignment" },
+      "description": "Assignments owned by a user."
+    }
+  }
+}

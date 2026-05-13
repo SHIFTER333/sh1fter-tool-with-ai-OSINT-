@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  --color-terminal-bg: #030303;
+  --color-hacker-green: #00ff41;
+  --color-hacker-green-dark: #008f11;
+  --color-hacker-green-dim: #003b00;
+  --color-hacker-red: #ff003c;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  background-color: var(--color-terminal-bg);
+  color: var(--color-hacker-green);
+  font-family: var(--font-mono);
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* CRT Scanline Effect */
+.crt::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Screen Flicker */
+@keyframes flicker {
+  0% { opacity: 0.95; }
+  5% { opacity: 0.85; }
+  10% { opacity: 0.95; }
+  15% { opacity: 1; }
+  100% { opacity: 1; }
+}
+.crt {
+  animation: flicker 0.15s infinite;
+}
+
+/* Custom Scrollbar for Terminal */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-terminal-bg);
+  border-left: 1px solid var(--color-hacker-green-dim);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-hacker-green-dark);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-hacker-green);
+}
+
+/* Glitch Text Effect */
+.glitch {
+  position: relative;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-terminal-bg);
+}
+.glitch::before {
+  left: 2px;
+  text-shadow: -1px 0 var(--color-hacker-red);
+  clip: rect(24px, 550px, 90px, 0);
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+.glitch::after {
+  left: -2px;
+  text-shadow: -1px 0 #00ffff;
+  clip: rect(85px, 550px, 140px, 0);
+  animation: glitch-anim 2.5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim {
+  0% { clip: rect(10px, 9999px, 83px, 0); }
+  20% { clip: rect(65px, 9999px, 14px, 0); }
+  40% { clip: rect(10px, 9999px, 55px, 0); }
+  60% { clip: rect(98px, 9999px, 20px, 0); }
+  80% { clip: rect(44px, 9999px, 93px, 0); }
+  100% { clip: rect(12px, 9999px, 33px, 0); }
+}
+@keyframes glitch-anim-2 {
+  0% { clip: rect(65px, 9999px, 100px, 0); }
+  20% { clip: rect(10px, 9999px, 45px, 0); }
+  40% { clip: rect(55px, 9999px, 10px, 0); }
+  60% { clip: rect(20px, 9999px, 80px, 0); }
+  80% { clip: rect(90px, 9999px, 10px, 0); }
+  100% { clip: rect(33px, 9999px, 60px, 0); }
+}

@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definition
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    // Validation Blueprint for UserRecord
+    function isValidUserRecord(data) {
+      return data.keys().hasAll(['favorites']) && data.keys().size() == 1
+        && data.favorites is list 
+        && data.favorites.size() <= 500; 
+        // Note: Can't easily check contents of list in rule without size/type assumption
+    }
+
+    // Validation Blueprint for Note
+    function isValidNote(data) {
+      return data.keys().hasAll(['text', 'date', 'userId']) && data.keys().size() == 3
+        && data.text is string && data.text.size() <= 10000
+        && data.date is string && data.date.size() <= 100
+        && data.userId is string && data.userId == request.auth.uid;
+    }
+
+    // Validation Blueprint for Assignment
+    function isValidAssignment(data) {
+      return data.keys().hasAll(['name', 'userId', 'tasks']) && data.keys().size() == 3
+        && data.name is string && data.name.size() <= 200
+        && data.userId is string && data.userId == request.auth.uid
+        && data.tasks is list && data.tasks.size() <= 1000;
+    }
+
+    match /users/{userId} {
+      // Allow read/write only if userId matches auth uid
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false; // Users shouldn't list all users
+
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && isValidId(userId)
+                    && isValidUserRecord(incoming());
+                    
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && isValidId(userId)
+                    && isValidUserRecord(incoming())
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['favorites']);
+                    
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+
+      match /notes/{noteId} {
+        // Query Enforcer
+        allow list: if isSignedIn() && request.auth.uid == userId && resource.data.userId == request.auth.uid;
+        allow get: if isSignedIn() && request.auth.uid == userId && resource.data.userId == request.auth.uid;
+
+        allow create: if isSignedIn() && request.auth.uid == userId
+                      && isValidId(userId) && isValidId(noteId)
+                      && isValidNote(incoming());
+
+        allow update: if isSignedIn() && request.auth.uid == userId
+                      && isValidId(userId) && isValidId(noteId)
+                      && isValidNote(incoming())
+                      && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'date'])
+                      && incoming().userId == existing().userId; // Immutable field
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;
+      }
+      
+      match /assignments/{assignmentId} {
+        // Query Enforcer
+        allow list: if isSignedIn() && request.auth.uid == userId && resource.data.userId == request.auth.uid;
+        allow get: if isSignedIn() && request.auth.uid == userId && resource.data.userId == request.auth.uid;
+
+        allow create: if isSignedIn() && request.auth.uid == userId
+                      && isValidId(userId) && isValidId(assignmentId)
+                      && isValidAssignment(incoming());
+
+        allow update: if isSignedIn() && request.auth.uid == userId
+                      && isValidId(userId) && isValidId(assignmentId)
+                      && isValidAssignment(incoming())
+                      && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'tasks'])
+                      && incoming().userId == existing().userId; // Immutable field
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;
+      }
+    }
+  }
+}
